@@ -2,7 +2,6 @@ package com.xuecheng.content.api;
 
 import com.xuecheng.content.model.dto.SaveTeachplanDto;
 import com.xuecheng.content.model.dto.TeachplanDto;
-import com.xuecheng.content.model.po.Teachplan;
 import com.xuecheng.content.service.TeachplanService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -34,9 +33,27 @@ public class TeachplanController {
         return teachplanTree;
     }
 
-    @ApiOperation(("课程计划创建或修改"))
+    @ApiOperation("课程计划创建或修改")
     @PostMapping("/teachplan")
     public void saveTeachplan(@RequestBody SaveTeachplanDto teachplanDto) {
         teachplanService.saveTeachplan(teachplanDto);
+    }
+
+    @ApiOperation("课程计划id删除")
+    @DeleteMapping("/teachplan/{teachplanId}")
+    public void deleteTeachplan(@PathVariable Long teachplanId) {
+        teachplanService.deleteTeachplan(teachplanId);
+    }
+
+    @ApiOperation("课程计划顺序下移动")
+    @PostMapping("/teachplan/movedown/{teachplanId}")
+    public void movedownTeachplan(@PathVariable Long teachplanId) {
+        teachplanService.moveTeachplan("1", teachplanId);
+    }
+
+    @ApiOperation("课程计划顺序上移动")
+    @PostMapping("/teachplan/moveup/{teachplanId}")
+    public void moveupTeachplan(@PathVariable Long teachplanId) {
+        teachplanService.moveTeachplan("0", teachplanId);
     }
 }

@@ -2,19 +2,16 @@ package com.xuecheng.content.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xuecheng.base.exception.CommonError;
 import com.xuecheng.base.exception.XueChengPlusException;
 import com.xuecheng.base.model.PageParams;
 import com.xuecheng.base.model.PageResult;
-import com.xuecheng.content.mapper.CourseBaseMapper;
-import com.xuecheng.content.mapper.CourseCategoryMapper;
-import com.xuecheng.content.mapper.CourseMarketMapper;
+import com.xuecheng.content.mapper.*;
 import com.xuecheng.content.model.dto.AddCourseDto;
 import com.xuecheng.content.model.dto.CourseBaseInfoDto;
 import com.xuecheng.content.model.dto.EditCourseDto;
 import com.xuecheng.content.model.dto.QueryCourseParamsDto;
-import com.xuecheng.content.model.po.CourseBase;
-import com.xuecheng.content.model.po.CourseCategory;
-import com.xuecheng.content.model.po.CourseMarket;
+import com.xuecheng.content.model.po.*;
 import com.xuecheng.content.service.CourseBaseInfoService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -41,6 +38,15 @@ public class CourseBaseInfoServiceImpl implements CourseBaseInfoService {
 
     @Autowired
     CourseCategoryMapper courseCategoryMapper;
+
+    @Autowired
+    CourseTeacherMapper courseTeacherMapper;
+
+    @Autowired
+    TeachplanMapper teachplanMapper;
+
+    @Autowired
+    TeachplanMediaMapper teachplanMediaMapper;
 
     @Override
     public PageResult<CourseBase> queryCourseBaseList(PageParams pageParams, QueryCourseParamsDto courseParamsDto) {
@@ -186,6 +192,27 @@ public class CourseBaseInfoServiceImpl implements CourseBaseInfoService {
         CourseBaseInfoDto courseBaseInfo = getCourseBaseInfo(courseId);
 
         return courseBaseInfo;
+    }
+
+    @Override
+    public void deleteCoureseBaseById(Long companyId, Long courseId) {
+        LambdaQueryWrapper<CourseTeacher> wrapperOne = new LambdaQueryWrapper<>();
+        wrapperOne.eq(CourseTeacher::getCourseId, courseId);
+        courseTeacherMapper.delete(wrapperOne);
+
+        LambdaQueryWrapper<TeachplanMedia> wrapperTwo = new LambdaQueryWrapper<>();
+        wrapperTwo.eq(TeachplanMedia::getCourseId, courseId);
+        teachplanMediaMapper.delete(wrapperTwo);
+
+        LambdaQueryWrapper<Teachplan> wrapperThree = new LambdaQueryWrapper<>();
+        wrapperThree.eq(Teachplan::getCourseId, courseId);
+        teachplanMapper.delete(wrapperThree);
+
+        courseMarketMapper.deleteById(courseId);
+
+        LambdaQueryWrapper<CourseBase> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(CourseBase::getCompanyId, companyId).eq(CourseBase::getId, courseId);
+        courseBaseMapper.delete(wrapper);
     }
 
     //单独写一个方法保存营销信息,逻辑:存在则更新，不存在则添加
