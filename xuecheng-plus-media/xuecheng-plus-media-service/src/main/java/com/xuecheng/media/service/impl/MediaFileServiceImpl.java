@@ -14,9 +14,7 @@ import com.xuecheng.media.model.dto.UploadFileParamsDto;
 import com.xuecheng.media.model.dto.UploadFileResultDto;
 import com.xuecheng.media.model.po.MediaFiles;
 import com.xuecheng.media.service.MediaFileService;
-import io.minio.GetObjectArgs;
-import io.minio.MinioClient;
-import io.minio.UploadObjectArgs;
+import io.minio.*;
 import io.minio.errors.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -38,6 +36,8 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author LuoXuanwei
@@ -319,10 +319,35 @@ public class MediaFileServiceImpl implements MediaFileService {
 
     @Override
     public RestResponse mergechunks(Long companyId, String fileMd5, int chunkTotal, UploadFileParamsDto uploadFileParamsDto) {
-        //找到分块文件调用minio的sdk进行文件合并
+        //分块文件所在目录
+        String chunkFileFolderPath = getChunkFileFolderPath(fileMd5);
+        //找到所有的分块文件
+        List<ComposeSource> sources = Stream.iterate(0, i -> ++i).limit(chunkTotal).map(i -> ComposeSource.builder().bucket(bucket_video).object(chunkFileFolderPath + i).build()).collect(Collectors.toList());
+        //源文件名称
+        String filename = uploadFileParamsDto.getFilename();
+        //扩展名
+        String extension = filename.substring(filename.lastIndexOf("."));
+        //合并后文件的objectname
+        String objectname = getFilePathByMd5(fileMd5, extension);
+        //指定合并后的objectName等信息
+        ComposeObjectArgs composeObjectArgs = ComposeObjectArgs.builder()
+                .bucket(bucket_video)
+                .object(objectname)//合并后的文件的objectname
+                .sources(sources)//指定源文件
+                .build();
+        //合并文件,
+        try {
+            minioClient.composeObject(composeObjectArgs);
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("合并文件出错,bucket:{},objectName:{},错误信息:{}",bucket_video,objectname,e.getMessage());
+        }
 
         //校验合并后的和源文件是否一致
 
+        //将文件信息入库
+
+        //清理分块文件
 
         return null;
     }
