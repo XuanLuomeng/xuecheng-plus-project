@@ -40,7 +40,7 @@ public class VideoTask {
      *
      * @throws Exception
      */
-    @XxlJob("shardingJobHandler")
+    @XxlJob("videoJobHandler")
     public void videoJobHandler() throws Exception {
         //分片参数
         int shardIndex = XxlJobHelper.getShardIndex();//执行器的序号，从0开始
@@ -57,12 +57,12 @@ public class VideoTask {
             return;
         }
         //创建一个线程池
-        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(size, 5, 3, TimeUnit.SECONDS, new LinkedBlockingQueue<>(3), Executors.defaultThreadFactory(), new ThreadPoolExecutor.AbortPolicy());
+        ExecutorService threadPool = Executors.newFixedThreadPool(size);
         //使用计数器阻塞以待数据返回
         CountDownLatch countDownLatch = new CountDownLatch(size);
         mediaProcessList.forEach(mediaProcess -> {
             //将任务加入线程池
-            threadPoolExecutor.execute(() -> {
+            threadPool.execute(() -> {
                 try {
                     //任务id
                     Long taskId = mediaProcess.getId();
@@ -130,7 +130,6 @@ public class VideoTask {
         });
         //阻塞,指定最大限制的等待时间，阻塞最多等待一定的时间后就停止阻塞
         countDownLatch.await(30, TimeUnit.MINUTES);
-        threadPoolExecutor.shutdown();
     }
 
     private String getFilePath(String fileMd5, String fileExt) {
