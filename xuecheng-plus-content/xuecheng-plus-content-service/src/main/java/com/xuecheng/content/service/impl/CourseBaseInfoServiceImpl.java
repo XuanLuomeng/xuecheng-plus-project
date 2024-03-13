@@ -200,9 +200,9 @@ public class CourseBaseInfoServiceImpl implements CourseBaseInfoService {
         wrapperOne.eq(CourseTeacher::getCourseId, courseId);
         courseTeacherMapper.delete(wrapperOne);
 
-        LambdaQueryWrapper<TeachplanMedia> wrapperTwo = new LambdaQueryWrapper<>();
-        wrapperTwo.eq(TeachplanMedia::getCourseId, courseId);
-        teachplanMediaMapper.delete(wrapperTwo);
+//        LambdaQueryWrapper<TeachplanMedia> wrapperTwo = new LambdaQueryWrapper<>();
+//        wrapperTwo.eq(TeachplanMedia::getCourseId, courseId);
+//        teachplanMediaMapper.delete(wrapperTwo);
 
         LambdaQueryWrapper<Teachplan> wrapperThree = new LambdaQueryWrapper<>();
         wrapperThree.eq(Teachplan::getCourseId, courseId);
