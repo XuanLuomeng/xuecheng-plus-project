@@ -37,8 +37,9 @@ public interface MediaFileService {
      * @param uploadFileParamsDto 文件信息
      * @param localFilePath       文件本地路径
      * @return UploadFileResultDto
+     * @Param objectName 如果传入objectname要按objectname的目录去存储，如果不传就按年月日存储
      */
-    public UploadFileResultDto uploadFile(Long companyId, UploadFileParamsDto uploadFileParamsDto, String localFilePath);
+    public UploadFileResultDto uploadFile(Long companyId, UploadFileParamsDto uploadFileParamsDto, String localFilePath, String objectName);
 
     /**
      * 方便自己注入自己以创建proxy对象，使事务控制注解生效
@@ -111,6 +112,7 @@ public interface MediaFileService {
 
     /**
      * 根据媒资id查询文件信息
+     *
      * @param mediaId
      * @return
      */

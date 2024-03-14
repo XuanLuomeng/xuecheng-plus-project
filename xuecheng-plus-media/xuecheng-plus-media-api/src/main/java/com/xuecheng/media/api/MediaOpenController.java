@@ -1,7 +1,6 @@
 package com.xuecheng.media.api;
 
 import com.alibaba.nacos.api.utils.StringUtils;
-import com.xuecheng.base.exception.XueChengPlusException;
 import com.xuecheng.base.model.RestResponse;
 import com.xuecheng.media.model.po.MediaFiles;
 import com.xuecheng.media.service.MediaFileService;

@@ -31,6 +31,10 @@ spring:
           - dataId: freemarker-config-${spring.profiles.active}.yaml
             group: xuecheng-plus-common
             efresh: true
+          - data-id: feign-${spring.profiles.active}.yaml
+            group: xuecheng-plus-common
+            refresh: true  #profiles默认为dev
+
 
   #  datasource:
   #    driver-class-name: com.mysql.cj.jdbc.Driver
