@@ -8,3 +8,6 @@ POST {{auth_host}}/auth/oauth/token?client_id=XcWebApp&client_secret=XcWebApp&gr
 
 ###校验jwt令牌
 POST {{auth_host}}/auth/oauth/check_token?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsieHVlY2hlbmctcGx1cyJdLCJ1c2VyX25hbWUiOiJ6aGFuZ3NhbiIsInNjb3BlIjpbImFsbCJdLCJleHAiOjE3MTA4NTEwNDMsImF1dGhvcml0aWVzIjpbInAxIl0sImp0aSI6IjhjNzdjYWM0LWY4OGYtNGIxYS04ODNiLTI0ODA5ODZlZmRlZCIsImNsaWVudF9pZCI6IlhjV2ViQXBwIn0.O5XSXWN5jXubldn3kCICCRt6Zn22Gtm-h2s85gE3P-A
+
+### 密码模式
+POST {{auth_host}}/auth/oauth/token?client_id=XcWebApp&client_secret=XcWebApp&grant_type=password&username={"username":"t1","password":"111111","authType":"password"}
