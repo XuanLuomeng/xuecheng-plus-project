@@ -22,7 +22,7 @@ public class CourseBaseInfoServiceTests {
     CourseBaseInfoService courseBaseInfoService;
 
     @Test
-    public void testCourseBaseInfoService(){
+    public void testCourseBaseInfoService() {
         //查询条件
         QueryCourseParamsDto courseParamsDto = new QueryCourseParamsDto();
         courseParamsDto.setCourseName("java");
@@ -30,7 +30,7 @@ public class CourseBaseInfoServiceTests {
         PageParams pageParams = new PageParams();
         pageParams.setPageNo(1L);
         pageParams.setPageSize(2L);
-        PageResult<CourseBase> courseBasePageResult = courseBaseInfoService.queryCourseBaseList(pageParams, courseParamsDto);
+        PageResult<CourseBase> courseBasePageResult = courseBaseInfoService.queryCourseBaseList(1213L, pageParams, courseParamsDto);
         System.out.println(courseBasePageResult);
     }
 }
