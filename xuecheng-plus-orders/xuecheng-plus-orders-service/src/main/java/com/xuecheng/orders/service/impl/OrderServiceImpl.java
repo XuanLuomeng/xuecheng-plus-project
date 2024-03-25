@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.xuecheng.base.exception.XueChengPlusException;
 import com.xuecheng.base.utils.IdWorkerUtils;
+import com.xuecheng.base.utils.QRCodeUtil;
 import com.xuecheng.orders.mapper.XcOrdersGoodsMapper;
 import com.xuecheng.orders.mapper.XcOrdersMapper;
 import com.xuecheng.orders.mapper.XcPayRecordMapper;
@@ -13,8 +14,13 @@ import com.xuecheng.orders.model.po.XcOrders;
 import com.xuecheng.orders.model.po.XcOrdersGoods;
 import com.xuecheng.orders.model.po.XcPayRecord;
 import com.xuecheng.orders.service.OrderService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,6 +30,8 @@ import java.util.List;
  * @description TODO
  * @date 2024/3/24 22:23
  */
+@Slf4j
+@Service
 public class OrderServiceImpl implements OrderService {
 
     @Autowired
@@ -35,6 +43,9 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     XcPayRecordMapper payRecordMapper;
 
+    @Value("${pay.qrcodeurl}")
+    String qrcodeurl;
+
     @Override
     public PayRecordDto createOrder(String userId, AddOrderDto addOrderDto) {
 
@@ -43,33 +54,54 @@ public class OrderServiceImpl implements OrderService {
 
         //插入支付记录
         XcPayRecord payRecord = createPayRecord(orders);
+        Long payNo = payRecord.getPayNo();
 
         //生成二维码
+        QRCodeUtil qrCodeUtil = new QRCodeUtil();
+        //支付二维码的url
+        String url = String.format(qrcodeurl, payNo);
+        //二维码图片
+        String qrCode = null;
+        try {
+            qrCode = qrCodeUtil.createQRCode(url, 200, 200);
+        } catch (IOException e) {
+            XueChengPlusException.cast("生成二维码出错");
+        }
 
-        return null;
+        PayRecordDto payRecordDto = new PayRecordDto();
+        BeanUtils.copyProperties(payRecord, payRecordDto);
+        payRecordDto.setQrcode(qrCode);
+
+        return payRecordDto;
+    }
+
+    @Override
+    public XcPayRecord getPayRecordByPayno(String payNo) {
+        XcPayRecord xcPayRecord = payRecordMapper.selectOne(new LambdaQueryWrapper<XcPayRecord>().eq(XcPayRecord::getPayNo, payNo));
+        return xcPayRecord;
     }
 
     /**
-    * @description 保存支付记录
-    * @Param [orders]
-    * @return com.xuecheng.orders.model.po.XcPayRecord
-    * @author LuoXuanwei
-    * @date 2024/3/24 22:48
-    */
-    public XcPayRecord createPayRecord(XcOrders orders){
+     * @return com.xuecheng.orders.model.po.XcPayRecord
+     * @description 保存支付记录
+     * @Param [orders]
+     * @author LuoXuanwei
+     * @date 2024/3/24 22:48
+     */
+    public XcPayRecord createPayRecord(XcOrders orders) {
 
         //订单id
         Long orderId = orders.getId();
         XcOrders xcOrders = ordersMapper.selectById(orderId);
 
         //如果此订单不存在不能添加支付记录
-        if (xcOrders==null){
+        if (xcOrders == null) {
             XueChengPlusException.cast("订单不存在");
         }
         //订单状态
         String status = xcOrders.getStatus();
         //支付成功
-        if ("601002".equals(status)){
+        if ("601002".equals(status)) {
             XueChengPlusException.cast("此订单已支付");
         }
 
@@ -86,7 +118,7 @@ public class OrderServiceImpl implements OrderService {
         xcPayRecord.setStatus("601001");
         xcPayRecord.setUserId(xcOrders.getUserId());
         int insert = payRecordMapper.insert(xcPayRecord);
-        if (insert<=0){
+        if (insert <= 0) {
             XueChengPlusException.cast("插入支付记录失败");
         }
 
@@ -104,7 +136,7 @@ public class OrderServiceImpl implements OrderService {
         //插入订单表，订单主表，订单明细表
         //进行幂等性判断，同一个选课记录只能有一个订单
         XcOrders xcOrders = getOrderByBusinessId(addOrderDto.getOutBusinessId());
-        if (xcOrders!=null){
+        if (xcOrders != null) {
             return xcOrders;
         }
 
@@ -120,12 +152,13 @@ public class OrderServiceImpl implements OrderService {
         //订单类型
         xcOrders.setOrderType("60201");
         xcOrders.setOrderName(addOrderDto.getOrderName());
+        xcOrders.setOrderDetail(addOrderDto.getOrderDetail());
         xcOrders.setOrderDescrip(addOrderDto.getOrderDescrip());
         //如果是选课这里记录选课表的id
         xcOrders.setOutBusinessId(addOrderDto.getOutBusinessId());
 
         int insert = ordersMapper.insert(xcOrders);
-        if (insert<=0){
+        if (insert <= 0) {
             XueChengPlusException.cast("添加订单失败");
         }
         //订单id
@@ -135,9 +168,9 @@ public class OrderServiceImpl implements OrderService {
         String orderDetailJson = addOrderDto.getOrderDetail();
         List<XcOrdersGoods> xcOrdersGoods = JSON.parseArray(orderDetailJson, XcOrdersGoods.class);
         //遍历xcOrderGoods插入订单明细表
-        xcOrdersGoods.forEach(goods->{
+        xcOrdersGoods.forEach(goods -> {
             goods.setOrderId(orderId);
-            int insert1 = ordersGoodsMapper.insert(goods);
+            ordersGoodsMapper.insert(goods);
         });
 
         return xcOrders;
@@ -145,7 +178,7 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * @return com.xuecheng.orders.model.po.XcOrders
-     * @description 根据业务id查询订单,业务id是选课记录表中的主键
+     * @description 根据业务id查询订单, 业务id是选课记录表中的主键
      * @Param [businessId]
      * @author LuoXuanwei
      * @date 2024/3/24 22:34

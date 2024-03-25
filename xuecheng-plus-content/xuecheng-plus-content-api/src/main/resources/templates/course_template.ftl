@@ -24,7 +24,7 @@
     <div class="banner-bg"></div>
     <div class="banner-info">
         <div class="banner-left">
-            <p>${model.courseBase.mtName!''}<span>\ ${model.courseBase.stName!''}</span></p>
+            <p>${model.courseBase.mtName}<span>\ ${model.courseBase.stName}</span></p>
             <p class="tit">${model.courseBase.name}</p>
             <p class="pic">
                 <#if model.courseBase.charge=='201000'>
@@ -180,7 +180,7 @@
                                 <div class="drop-down" style="height: 260px;">
                                     <ul class="list-box">
                                         <#list firstNode.teachPlanTreeNodes as secondNode>
-                                            <li><a href="http://www.51xuecheng.cn/course/preview/learning.html?id=${model.courseBase.id}&chapter=${secondNode.teachplanId!''}" target="_blank">${secondNode.pname}</a></li>
+                                            <li><a href="http://www.51xuecheng.cn/course/preview/learning.html?id=${model.courseBase.id}&chapter=${firstNode.teachplanMedia.teachplanId!''}" target="_blank">${secondNode.pname}</a></li>
                                         </#list>
                                     </ul>
                                 </div>
