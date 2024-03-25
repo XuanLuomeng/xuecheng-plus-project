@@ -2,6 +2,7 @@ package com.xuecheng.orders.service;
 
 import com.xuecheng.orders.model.dto.AddOrderDto;
 import com.xuecheng.orders.model.dto.PayRecordDto;
+import com.xuecheng.orders.model.dto.PayStatusDto;
 import com.xuecheng.orders.model.po.XcPayRecord;
 
 /**
@@ -22,11 +23,29 @@ public interface OrderService {
     public PayRecordDto createOrder(String userId, AddOrderDto addOrderDto);
 
     /**
-    * @description 查询支付记录号
-    * @Param [payNo 交易记录号]
-    * @return XcPayRecord
-    * @author LuoXuanwei
-    * @date 2024/3/25 13:17
-    */
+     * @return XcPayRecord
+     * @description 查询支付记录号
+     * @Param [payNo 交易记录号]
+     * @author LuoXuanwei
+     * @date 2024/3/25 13:17
+     */
     public XcPayRecord getPayRecordByPayno(String payNo);
+
+    /**
+     * @return com.xuecheng.orders.model.dto.PayRecordDto 支付记录信息
+     * @description 请求支付宝查询支付结果
+     * @Param [payNo 支付记录id]
+     * @author LuoXuanwei
+     * @date 2024/3/26 0:03
+     */
+    public PayRecordDto queryPayResult(String payNo);
+
+    /**
+     * @return void
+     * @description 保存支付状态
+     * @Param [payStatusDto]
+     * @author LuoXuanwei
+     * @date 2024/3/26 0:54
+     */
+    public void saveAliPayStatus(PayStatusDto payStatusDto);
 }
