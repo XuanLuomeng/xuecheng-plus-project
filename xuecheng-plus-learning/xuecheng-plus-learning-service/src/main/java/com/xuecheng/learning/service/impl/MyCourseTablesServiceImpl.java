@@ -102,107 +102,140 @@ public class MyCourseTablesServiceImpl implements MyCourseTablesService {
         }
     }
 
-//    /**
-//     * @return com.xuecheng.learning.model.po.XcChooseCourse
-//     * @description 添加免费课程, 免费课程加入选课记录表、我的课程表
-//     * @Param [userId, coursepublish]
-//     * @author LuoXuanwei
-//     * @date 2024/3/24 17:37
-//     */
-//    public XcChooseCourse addFreeCourse(String userId, CoursePublish coursepublish) {
-//        //课程id
-//        Long courseId = coursepublish.getId();
-//        //判断，如果存在免费的课程记录且选课状态为成功，直接返回
-//        LambdaQueryWrapper<XcChooseCourse> queryWrapper = new LambdaQueryWrapper<XcChooseCourse>().eq(XcChooseCourse::getUserId, userId)
-//                .eq(XcChooseCourse::getCourseId, userId)
-//                //免费课程
-//                .eq(XcChooseCourse::getOrderType, "700001")
-//                //选课成功
-//                .eq(XcChooseCourse::getStatus, "701001");
-//
-//        List<XcChooseCourse> xcChooseCourses = chooseCourseMapper.selectList(queryWrapper);
-//        if (xcChooseCourses.size() > 0) {
-//            return xcChooseCourses.get(0);
-//        }
-//
-//        //向选课记录表写数据
-//
-//        XcChooseCourse chooseCourse = new XcChooseCourse();
-//
-//        chooseCourse.setCourseId(courseId);
-//        chooseCourse.setCourseName(coursepublish.getName());
-//        chooseCourse.setUserId(userId);
-//        chooseCourse.setCompanyId(coursepublish.getCompanyId());
-//        //免费课程
-//        chooseCourse.setOrderType("700001");
-//        chooseCourse.setCreateDate(LocalDateTime.now());
-//        chooseCourse.setCoursePrice(coursepublish.getPrice());
-//        chooseCourse.setValidDays(365);
-//        //选课成功
-//        chooseCourse.setStatus("701001");
-//        //有效期的开始时间
-//        chooseCourse.setValidtimeStart(LocalDateTime.now());
-//        //有效期的结束时间
-//        chooseCourse.setValidtimeEnd(LocalDateTime.now().plusDays(365));
-//
-//        int insert = chooseCourseMapper.insert(chooseCourse);
-//        if (insert <= 0) {
-//            XueChengPlusException.cast("添加选课记录失败");
-//        }
-//
-//        return chooseCourse;
-//    }
-//
-//    /**
-//     * @return com.xuecheng.learning.model.po.XcChooseCourse
-//     * @description 添加收费课程
-//     * @Param [userId, coursepublish]
-//     * @author LuoXuanwei
-//     * @date 2024/3/24 17:37
-//     */
-//    public XcChooseCourse addChargeCourse(String userId, CoursePublish coursepublish) {
-//        //课程id
-//        Long courseId = coursepublish.getId();
-//        //判断，如果存在收费的课程记录且选课状态为待支付，直接返回
-//        LambdaQueryWrapper<XcChooseCourse> queryWrapper = new LambdaQueryWrapper<XcChooseCourse>().eq(XcChooseCourse::getUserId, userId)
-//                .eq(XcChooseCourse::getCourseId, userId)
-//                //收费课程
-//                .eq(XcChooseCourse::getOrderType, "700002")
-//                //待支付
-//                .eq(XcChooseCourse::getStatus, "701002");
-//
-//        List<XcChooseCourse> xcChooseCourses = chooseCourseMapper.selectList(queryWrapper);
-//        if (xcChooseCourses.size() > 0) {
-//            return xcChooseCourses.get(0);
-//        }
-//
-//        //向选课记录表写数据
-//
-//        XcChooseCourse chooseCourse = new XcChooseCourse();
-//
-//        chooseCourse.setCourseId(courseId);
-//        chooseCourse.setCourseName(coursepublish.getName());
-//        chooseCourse.setUserId(userId);
-//        chooseCourse.setCompanyId(coursepublish.getCompanyId());
-//        //收费课程
-//        chooseCourse.setOrderType("700002");
-//        chooseCourse.setCreateDate(LocalDateTime.now());
-//        chooseCourse.setCoursePrice(coursepublish.getPrice());
-//        chooseCourse.setValidDays(365);
-//        //待支付
-//        chooseCourse.setStatus("701002");
-//        //有效期的开始时间
-//        chooseCourse.setValidtimeStart(LocalDateTime.now());
-//        //有效期的结束时间
-//        chooseCourse.setValidtimeEnd(LocalDateTime.now().plusDays(365));
-//
-//        int insert = chooseCourseMapper.insert(chooseCourse);
-//        if (insert <= 0) {
-//            XueChengPlusException.cast("添加选课记录失败");
-//        }
-//
-//        return chooseCourse;
-//    }
+    @Override
+    public boolean saveChooseCourseSuccess(String chooseCourseId) {
+
+        //根据选课id查询选课表
+        XcChooseCourse chooseCourse = chooseCourseMapper.selectById(chooseCourseId);
+        if (chooseCourse == null) {
+            log.debug("接收购买课程的消息，根据选课id从数据库找不到选课记录，选课id:{}", chooseCourseId);
+            return false;
+        }
+
+        //选课状态
+        String status = chooseCourse.getStatus();
+
+        //只有当未支付时才更新为已支付
+        if ("701002".equals(status)) {
+            //更新选课记录的状态为支付成功
+            chooseCourse.setStatus("701001");
+            int update = chooseCourseMapper.updateById(chooseCourse);
+            if (update <= 0) {
+                log.debug("添加选课记录失败:{}", chooseCourse);
+                XueChengPlusException.cast("添加选课记录失败");
+            }
+
+            //向我的课程表插入记录
+            XcCourseTables xcCourseTables = addCourseTables(chooseCourse);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return com.xuecheng.learning.model.po.XcChooseCourse
+     * @description 添加免费课程, 免费课程加入选课记录表、我的课程表(可与addChargeCourse类合并)
+     * @Param [userId, coursepublish]
+     * @author LuoXuanwei
+     * @date 2024/3/24 17:37
+     */
+    @Deprecated
+    public XcChooseCourse addFreeCourse(String userId, CoursePublish coursepublish) {
+        //课程id
+        Long courseId = coursepublish.getId();
+        //判断，如果存在免费的课程记录且选课状态为成功，直接返回
+        LambdaQueryWrapper<XcChooseCourse> queryWrapper = new LambdaQueryWrapper<XcChooseCourse>().eq(XcChooseCourse::getUserId, userId)
+                .eq(XcChooseCourse::getCourseId, userId)
+                //免费课程
+                .eq(XcChooseCourse::getOrderType, "700001")
+                //选课成功
+                .eq(XcChooseCourse::getStatus, "701001");
+
+        List<XcChooseCourse> xcChooseCourses = chooseCourseMapper.selectList(queryWrapper);
+        if (xcChooseCourses.size() > 0) {
+            return xcChooseCourses.get(0);
+        }
+
+        //向选课记录表写数据
+
+        XcChooseCourse chooseCourse = new XcChooseCourse();
+
+        chooseCourse.setCourseId(courseId);
+        chooseCourse.setCourseName(coursepublish.getName());
+        chooseCourse.setUserId(userId);
+        chooseCourse.setCompanyId(coursepublish.getCompanyId());
+        //免费课程
+        chooseCourse.setOrderType("700001");
+        chooseCourse.setCreateDate(LocalDateTime.now());
+        chooseCourse.setCoursePrice(coursepublish.getPrice());
+        chooseCourse.setValidDays(365);
+        //选课成功
+        chooseCourse.setStatus("701001");
+        //有效期的开始时间
+        chooseCourse.setValidtimeStart(LocalDateTime.now());
+        //有效期的结束时间
+        chooseCourse.setValidtimeEnd(LocalDateTime.now().plusDays(365));
+
+        int insert = chooseCourseMapper.insert(chooseCourse);
+        if (insert <= 0) {
+            XueChengPlusException.cast("添加选课记录失败");
+        }
+
+        return chooseCourse;
+    }
+
+    /**
+     * @return com.xuecheng.learning.model.po.XcChooseCourse
+     * @description 添加收费课程(可与addFreeCourse类合并)
+     * @Param [userId, coursepublish]
+     * @author LuoXuanwei
+     * @date 2024/3/24 17:37
+     */
+    @Deprecated
+    public XcChooseCourse addChargeCourse(String userId, CoursePublish coursepublish) {
+        //课程id
+        Long courseId = coursepublish.getId();
+        //判断，如果存在收费的课程记录且选课状态为待支付，直接返回
+        LambdaQueryWrapper<XcChooseCourse> queryWrapper = new LambdaQueryWrapper<XcChooseCourse>().eq(XcChooseCourse::getUserId, userId)
+                .eq(XcChooseCourse::getCourseId, userId)
+                //收费课程
+                .eq(XcChooseCourse::getOrderType, "700002")
+                //待支付
+                .eq(XcChooseCourse::getStatus, "701002");
+
+        List<XcChooseCourse> xcChooseCourses = chooseCourseMapper.selectList(queryWrapper);
+        if (xcChooseCourses.size() > 0) {
+            return xcChooseCourses.get(0);
+        }
+
+        //向选课记录表写数据
+
+        XcChooseCourse chooseCourse = new XcChooseCourse();
+
+        chooseCourse.setCourseId(courseId);
+        chooseCourse.setCourseName(coursepublish.getName());
+        chooseCourse.setUserId(userId);
+        chooseCourse.setCompanyId(coursepublish.getCompanyId());
+        //收费课程
+        chooseCourse.setOrderType("700002");
+        chooseCourse.setCreateDate(LocalDateTime.now());
+        chooseCourse.setCoursePrice(coursepublish.getPrice());
+        chooseCourse.setValidDays(365);
+        //待支付
+        chooseCourse.setStatus("701002");
+        //有效期的开始时间
+        chooseCourse.setValidtimeStart(LocalDateTime.now());
+        //有效期的结束时间
+        chooseCourse.setValidtimeEnd(LocalDateTime.now().plusDays(365));
+
+        int insert = chooseCourseMapper.insert(chooseCourse);
+        if (insert <= 0) {
+            XueChengPlusException.cast("添加选课记录失败");
+        }
+
+        return chooseCourse;
+    }
 
     /**
      * @return com.xuecheng.learning.model.po.XcChooseCourse
