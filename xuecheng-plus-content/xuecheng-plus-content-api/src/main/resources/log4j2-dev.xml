@@ -76,6 +76,7 @@
         <!--DEBUG   500-->
         <!--TRACE   600-->
         <!--ALL   Integer.MAX_VALUE-->
+        <!--到运营时将下方DEBUG改为info提高吞吐量-->
         <Root level="DEBUG" includeLocation="true">
             <AppenderRef ref="AsyncAppender"/>
             <AppenderRef ref="Console"/>

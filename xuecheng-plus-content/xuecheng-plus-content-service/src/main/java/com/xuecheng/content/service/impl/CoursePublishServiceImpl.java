@@ -22,6 +22,7 @@ import com.xuecheng.content.service.CoursePublishService;
 import com.xuecheng.content.service.TeachplanService;
 import com.xuecheng.messagesdk.model.po.MqMessage;
 import com.xuecheng.messagesdk.service.MqMessageService;
+import freemarker.cache.ClassTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import lombok.extern.slf4j.Slf4j;
@@ -188,10 +189,14 @@ public class CoursePublishServiceImpl implements CoursePublishService {
         //最终的静态文件
         File htmlFile = null;
         try {
-            //拿到classpath路径
-            String classpath = this.getClass().getResource("/").getPath();
-            //指定模板的目录
-            configuration.setDirectoryForTemplateLoading(new File(classpath + "/templates/"));
+//            //拿到classpath路径
+//            String classpath = this.getClass().getResource("/").getPath();
+//            //指定模板的目录
+//            configuration.setDirectoryForTemplateLoading(new File(classpath + "/templates/"));
+
+            //运营模式时使用以下代码代替上方两行代码
+            configuration.setTemplateLoader(new ClassTemplateLoader(this.getClass().getClassLoader(),"/templates"));
+
             //设置字符编码
             configuration.setDefaultEncoding("utf-8");
             //指定模板文件名称
