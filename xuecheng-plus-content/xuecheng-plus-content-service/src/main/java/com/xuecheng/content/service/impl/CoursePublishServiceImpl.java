@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
@@ -41,6 +42,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author LuoXuanwei
@@ -75,6 +77,9 @@ public class CoursePublishServiceImpl implements CoursePublishService {
 
     @Autowired
     MediaServiceClient mediaServiceClient;
+
+    @Autowired
+    RedisTemplate redisTemplate;
 
     @Override
     public CoursePreviewDto getCoursePreviewInfo(Long courseId) {
@@ -195,7 +200,7 @@ public class CoursePublishServiceImpl implements CoursePublishService {
 //            configuration.setDirectoryForTemplateLoading(new File(classpath + "/templates/"));
 
             //运营模式时使用以下代码代替上方两行代码
-            configuration.setTemplateLoader(new ClassTemplateLoader(this.getClass().getClassLoader(),"/templates"));
+            configuration.setTemplateLoader(new ClassTemplateLoader(this.getClass().getClassLoader(), "/templates"));
 
             //设置字符编码
             configuration.setDefaultEncoding("utf-8");
@@ -227,7 +232,7 @@ public class CoursePublishServiceImpl implements CoursePublishService {
             //将file转成MultipartFile
             MultipartFile multipartFile = MultipartSupportConfig.getMultipartFile(file);
             String upload = mediaServiceClient.upload(multipartFile, "course/" + courseId + ".html");
-            log.debug("upload:{}",upload);
+            log.debug("upload:{}", upload);
             if (upload == null) {
                 log.debug("远程调用降级逻辑得到上传的结果为null,课程id:{}", courseId);
                 XueChengPlusException.cast("上传静态文件过程中存在异常");
@@ -252,12 +257,33 @@ public class CoursePublishServiceImpl implements CoursePublishService {
 
     /**
      * 根据课程id查询课程发布信息
+     *
      * @param courseId
      * @return
      */
     @Override
-    public CoursePublish getCoursePublish(Long courseId){
+    public CoursePublish getCoursePublish(Long courseId) {
         CoursePublish coursePublish = coursePublishMapper.selectById(courseId);
-        return coursePublish ;
+        return coursePublish;
+    }
+
+    @Override
+    public CoursePublish getCoursePublishCache(Long courseId) {
+        //从缓存中查
+        Object jsonObj = redisTemplate.opsForValue().get("course:" + courseId);
+        if (jsonObj != null) {
+            //缓存中有直接返回数据
+            String jsonString = jsonObj.toString();
+            CoursePublish coursePublish = JSON.parseObject(jsonString, CoursePublish.class);
+            return coursePublish;
+        }else {
+            //从数据库查
+            CoursePublish coursePublish = getCoursePublish(courseId);
+//            if (coursePublish!=null) {
+                //查询完成再存储到redis
+                redisTemplate.opsForValue().set("course:" + courseId, JSON.toJSONString(coursePublish),30, TimeUnit.SECONDS);
+//            }
+            return coursePublish;
+        }
     }
 }

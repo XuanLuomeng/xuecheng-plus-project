@@ -39,7 +39,9 @@ public class CoursePublishController {
         CoursePreviewDto coursePreviewDto = new CoursePreviewDto();
 
         //查询课程发布表
-        CoursePublish coursePublish = coursePublishService.getCoursePublish(courseId);
+//        CoursePublish coursePublish = coursePublishService.getCoursePublish(courseId);
+        //先从redis中查
+        CoursePublish coursePublish = coursePublishService.getCoursePublishCache(courseId);
         if (coursePublish==null){
             return coursePreviewDto;
         }
